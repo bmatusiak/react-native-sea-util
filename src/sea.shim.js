@@ -3,12 +3,11 @@ import { Buffer } from "buffer";
 import elliptic from 'elliptic';//pair/secret/sign/verify
 // import SeaUtil from 'react-native-sea-util';
 
-export default function shim(SeaUtil) {
+module.exports = function shim(SeaUtil) {
 
     (function () {
         window.crypto = window.crypto || {};
         window.crypto.getRandomValues = function getRandomValues(typedArray) {
-            console.log("native getRandomValues")
             var Type;
             if (typedArray instanceof Int8Array) { Type = Int8Array }
             if (typedArray instanceof Uint8Array) { Type = Uint8Array }

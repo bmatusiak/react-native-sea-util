@@ -1,7 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
-const shim: any = require('./sea.shim');
+const shim = require('./sea.shim');
 
 const LINKING_ERROR =
   `The package 'react-native-sea-util' doesn't seem to be linked. Make sure: \n\n` +

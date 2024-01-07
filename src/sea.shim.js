@@ -1,11 +1,7 @@
-import { Buffer } from "buffer";
-// window.Buffer = window.Buffer || Buffer.Buffer;
-import elliptic from 'elliptic';//pair/secret/sign/verify
-// import SeaUtil from 'react-native-sea-util';
-
 module.exports = function shim(SeaUtil) {
-
+    const Buffer = (() => require("buffer").Buffer)();
     (function () {
+        window = global || window;
         window.crypto = window.crypto || {};
         window.crypto.getRandomValues = function getRandomValues(typedArray) {
             var Type;
@@ -25,7 +21,7 @@ module.exports = function shim(SeaUtil) {
             return rnd;
         }
     })();
-
+    const elliptic = require("elliptic");//pair/secret/sign/verify
     const SEA = (function (window) {
         var SEA = window.SEA || {};
         var EC = elliptic.ec;
@@ -34,16 +30,6 @@ module.exports = function shim(SeaUtil) {
 
         // setTimeout(function () {
         //     (async () => {
-        //         setInterval(() => {
-        //             //getRandomBytes", "getRandomBytesAsync", "getRandomValues
-
-        //             // var b = new Int8Array(Buffer.alloc(10))
-        //             // var r = getRandomValues( b )
-        //             // console.log("rnd",b)
-        //             // console.log("rnd",r)
-        //             // console.log("crypto", Object.keys(crypto))
-        //         }, 5000);
-        //         return;
         //         var $msg = await doWork("data", null, function () { }, { name: "sha" })
         //         if ($msg) console.log("doWork-sha", $msg)
         //         var gun_pair = await doPair();
@@ -68,7 +54,6 @@ module.exports = function shim(SeaUtil) {
         //         if (dec) console.log("doDecrypt", dec);
         //     })()
         // }, 1000);
-
 
         function genKeyPair() {
             var ec = new EC('p256');
@@ -310,11 +295,11 @@ module.exports = function shim(SeaUtil) {
             return new Uint8Array(bytes);
         }
         var shim = { Buffer }
-        shim.crypto = window.crypto || window.msCrypto
+        // shim.crypto = window.crypto || window.msCrypto
         // shim.subtle = (shim.crypto || o).subtle || (shim.crypto || o).webkitSubtle;
         // shim.TextEncoder = window.TextEncoder;
         // shim.TextDecoder = window.TextDecoder;
-        shim.random = (len) => shim.Buffer.from(shim.crypto.getRandomValues(new Uint8Array(shim.Buffer.alloc(len))));
+        shim.random = (len) => shim.Buffer.from(window.crypto.getRandomValues(new Uint8Array(shim.Buffer.alloc(len))));
         shim.parse = function (t, r) {
             return new Promise(function (res, rej) {
                 JSON.parseAsync(t, function (err, raw) { err ? rej(err) : res(raw) }, r);

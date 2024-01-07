@@ -17,6 +17,4 @@ const SeaUtil = NativeModules.SeaUtil
       }
     );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return SeaUtil.multiply(a, b);
-}
+export default SeaUtil;

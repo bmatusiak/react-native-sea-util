@@ -1,9 +1,11 @@
+import { Buffer } from "buffer";
+// window.Buffer = window.Buffer || Buffer.Buffer;
 import elliptic from 'elliptic';//pair/secret/sign/verify
 // import SeaUtil from 'react-native-sea-util';
 
 export default function shim(SeaUtil) {
 
-    ; (function () {
+    (function () {
         window.crypto = window.crypto || {};
         window.crypto.getRandomValues = function getRandomValues(typedArray) {
             console.log("native getRandomValues")
@@ -31,42 +33,42 @@ export default function shim(SeaUtil) {
         var ECDH = new EC('p256');
         var ECDSA = new EC('p256');
 
-        setTimeout(function () {
-            (async () => {
-                setInterval(() => {
-                    //getRandomBytes", "getRandomBytesAsync", "getRandomValues
+        // setTimeout(function () {
+        //     (async () => {
+        //         setInterval(() => {
+        //             //getRandomBytes", "getRandomBytesAsync", "getRandomValues
 
-                    // var b = new Int8Array(Buffer.alloc(10))
-                    // var r = getRandomValues( b )
-                    // console.log("rnd",b)
-                    // console.log("rnd",r)
-                    // console.log("crypto", Object.keys(crypto))
-                }, 5000);
-                return;
-                var $msg = await doWork("data", null, function () { }, { name: "sha" })
-                if ($msg) console.log("doWork-sha", $msg)
-                var gun_pair = await doPair();
-                // gun_pair = {
-                //     "epriv": "kzFOKjHTcHzjHhhDq-2yRVSeuPDL_bcm6BYFAeMXa6c",
-                //     "epub": "V9PSJ-SZJ4RiuKzs1pkTmgiJfehfrngjWwJzKKZwIQ8.L5smkg1kXidIZtA2bXBzun_ylX-DWv4Wf7xanuFVsMM",
-                //     "priv": "Pkl3X-2dOgbplyhQLIpbbV-pUgjhyjUxPL942j9kCSc",
-                //     "pub": "BX1AbGMWavegl_37goBJYlNEt18X9TE5a3IZL5yj1mw.on7CNrmgB0JRx9yiHi1-SCPvDlmsVGBdFQ2cxnziGI4"
-                // };
-                console.log("doPair", gun_pair);
-                $msg = await doWork($msg, "salty");
-                if ($msg) console.log("doWork", $msg)
-                var aeskey = await doDerive(gun_pair.epub, gun_pair);
-                if (aeskey) console.log("doDerive", aeskey);
-                var sig = await doSign($msg, gun_pair);
-                if (sig) console.log("doSign", sig);
-                var ver = await doVerify(sig, gun_pair.pub);
-                if (ver) console.log("doVerify", ver);
-                var enc = await doEncrypt($msg, aeskey);
-                if (enc) console.log("doEncrypt", enc);
-                var dec = await doDecrypt(enc, aeskey);
-                if (dec) console.log("doDecrypt", dec);
-            })()
-        }, 1000);
+        //             // var b = new Int8Array(Buffer.alloc(10))
+        //             // var r = getRandomValues( b )
+        //             // console.log("rnd",b)
+        //             // console.log("rnd",r)
+        //             // console.log("crypto", Object.keys(crypto))
+        //         }, 5000);
+        //         return;
+        //         var $msg = await doWork("data", null, function () { }, { name: "sha" })
+        //         if ($msg) console.log("doWork-sha", $msg)
+        //         var gun_pair = await doPair();
+        //         // gun_pair = {
+        //         //     "epriv": "kzFOKjHTcHzjHhhDq-2yRVSeuPDL_bcm6BYFAeMXa6c",
+        //         //     "epub": "V9PSJ-SZJ4RiuKzs1pkTmgiJfehfrngjWwJzKKZwIQ8.L5smkg1kXidIZtA2bXBzun_ylX-DWv4Wf7xanuFVsMM",
+        //         //     "priv": "Pkl3X-2dOgbplyhQLIpbbV-pUgjhyjUxPL942j9kCSc",
+        //         //     "pub": "BX1AbGMWavegl_37goBJYlNEt18X9TE5a3IZL5yj1mw.on7CNrmgB0JRx9yiHi1-SCPvDlmsVGBdFQ2cxnziGI4"
+        //         // };
+        //         console.log("doPair", gun_pair);
+        //         $msg = await doWork($msg, "salty");
+        //         if ($msg) console.log("doWork", $msg)
+        //         var aeskey = await doDerive(gun_pair.epub, gun_pair);
+        //         if (aeskey) console.log("doDerive", aeskey);
+        //         var sig = await doSign($msg, gun_pair);
+        //         if (sig) console.log("doSign", sig);
+        //         var ver = await doVerify(sig, gun_pair.pub);
+        //         if (ver) console.log("doVerify", ver);
+        //         var enc = await doEncrypt($msg, aeskey);
+        //         if (enc) console.log("doEncrypt", enc);
+        //         var dec = await doDecrypt(enc, aeskey);
+        //         if (dec) console.log("doDecrypt", dec);
+        //     })()
+        // }, 1000);
 
 
         function genKeyPair() {
@@ -129,8 +131,8 @@ export default function shim(SeaUtil) {
                 arrayBufToBase64UrlDecode(pub.split(".")[0]),
                 arrayBufToBase64UrlDecode(pub.split(".")[1])
             ]))
-            var key = ECDH.keyFromPrivate(arrayBufToBase64UrlDecode(epriv));
-            var derived = arrayBufToBase64UrlEncode(key.derive(ECDH.keyFromPublic(parsedPair).getPublic()).toBuffer())
+            var $key = ECDH.keyFromPrivate(arrayBufToBase64UrlDecode(epriv));
+            var derived = arrayBufToBase64UrlEncode($key.derive(ECDH.keyFromPublic(parsedPair).getPublic()).toBuffer())
             var r = derived;
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
@@ -146,6 +148,7 @@ export default function shim(SeaUtil) {
                 return raw;
             }
             opt = opt || {};
+            opt.ok = "?";
             // SEA.I // verify is free! Requires no user permission.
             var pub = pair.pub || pair;
 
@@ -158,10 +161,10 @@ export default function shim(SeaUtil) {
             // var parsedData = JSON.parse(data.substring(3, data.length));
             var dataHash = await sha256_n(await sha256_n(json.m));
             var sig = u8(Buffer.from(json.s, "base64"))
-            var r = sig.slice(0, 32);
+            var rs = sig.slice(0, 32);
             var s = sig.slice(32);
             var sig_ = {
-                r: u8(r),
+                r: u8(rs),
                 s: u8(s)
             }
             var check = key.verify(dataHash, sig_)
@@ -250,7 +253,7 @@ export default function shim(SeaUtil) {
 
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
-        };
+        }
         SEA.decrypt = doDecrypt;
 
         //------------
@@ -264,13 +267,13 @@ export default function shim(SeaUtil) {
             }).join('');
             return ret;
         }
-        function string2bytes(s) {
-            var len = s.length;
-            var bytes = [];
-            for (var i = 0; i < len; i++) bytes.push(0);
-            for (var i = 0; i < len; i++) bytes[i] = s.charCodeAt(i);
-            return bytes;
-        };
+        // function string2bytes(s) {
+        //     var len = s.length;
+        //     var bytes = [];
+        //     for (var i = 0; i < len; i++) bytes.push(0);
+        //     for (var j = 0; j < len; j++) bytes[j] = s.charCodeAt(j);
+        //     return bytes;
+        // }
         function hexStrToDec(hexStr) {
             return ~~(new Number('0x' + hexStr).toString(10));
         }
@@ -287,9 +290,9 @@ export default function shim(SeaUtil) {
             s = s.replace(/-/g, '+').replace(/_/g, '/');
             return atob(s + '==='.slice((s.length + 3) % 4));
         }
-        function u2f_b64(s) {
-            return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        }
+        // function u2f_b64(s) {
+        //     return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        // }
         function arrayBufToBase64UrlEncode(buf) {
             var binary = '';
             var bytes = new Uint8Array(buf);
@@ -309,9 +312,9 @@ export default function shim(SeaUtil) {
         }
         var shim = { Buffer }
         shim.crypto = window.crypto || window.msCrypto
-        shim.subtle = (shim.crypto || o).subtle || (shim.crypto || o).webkitSubtle;
-        shim.TextEncoder = window.TextEncoder;
-        shim.TextDecoder = window.TextDecoder;
+        // shim.subtle = (shim.crypto || o).subtle || (shim.crypto || o).webkitSubtle;
+        // shim.TextEncoder = window.TextEncoder;
+        // shim.TextDecoder = window.TextDecoder;
         shim.random = (len) => shim.Buffer.from(shim.crypto.getRandomValues(new Uint8Array(shim.Buffer.alloc(len))));
         shim.parse = function (t, r) {
             return new Promise(function (res, rej) {
@@ -329,12 +332,12 @@ export default function shim(SeaUtil) {
                 var yes = (typeof t == 'string');
                 if (yes && 'SEA{' === t.slice(0, 4)) { t = t.slice(3) }
                 return yes ? await shim.parse(t) : t;
-            } catch (e) { }
+            } catch (e) { null; }
             return t;
         }
 
         window.SEA = SEA;
-    })(global || window);
+    })(window);
 
     return SEA;
 }

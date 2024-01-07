@@ -7,6 +7,8 @@ import androidx.annotation.NonNull;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.module.annotations.ReactModule;
 
@@ -139,6 +141,18 @@ public class SeaUtilModule extends ReactContextBaseJavaModule {
     }
   }
 
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public WritableArray randomBytesSync( Integer length) {
+    byte[] key = new byte[length];
+    SecureRandom rand = new SecureRandom();
+    rand.nextBytes(key);
+    WritableArray map = new WritableNativeArray();
+    for ( int j = 0; j < key.length; j++ ) {
+      map.pushInt(key[j]);
+    }
+    return map;
+  }
+
   private String shaX(String data, String algorithm) throws Exception {
     MessageDigest md = MessageDigest.getInstance(algorithm);
     md.update(data.getBytes());
@@ -153,16 +167,7 @@ public class SeaUtilModule extends ReactContextBaseJavaModule {
     return bytesToHex(digest);
   }
 
-  public static String bytesToHex(byte[] bytes) {
-    final char[] hexArray = "0123456789abcdef".toCharArray();
-    char[] hexChars = new char[bytes.length * 2];
-    for ( int j = 0; j < bytes.length; j++ ) {
-      int v = bytes[j] & 0xFF;
-      hexChars[j * 2] = hexArray[v >>> 4];
-      hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-    }
-    return new String(hexChars);
-  }
+
   private static String pbkdf2(String pwd, String salt, Integer cost, Integer length, String algorithm)
           throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException
   {
@@ -205,4 +210,17 @@ public class SeaUtilModule extends ReactContextBaseJavaModule {
     return new String(cipher.doFinal(combined), StandardCharsets.UTF_8);
   }
 
+  public static String bytesToHex(byte[] bytes) {
+    final char[] hexArray = "0123456789abcdef".toCharArray();
+    char[] hexChars = new char[bytes.length * 2];
+    for ( int j = 0; j < bytes.length; j++ ) {
+      int v = bytes[j] & 0xFF;
+      hexChars[j * 2] = hexArray[v >>> 4];
+      hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+    }
+    return new String(hexChars);
+  }
+  public static long getUnsignedInt(int x) {
+    return x & (-1L >>> 32);
+  }
 }

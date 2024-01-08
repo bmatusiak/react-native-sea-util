@@ -3,10 +3,11 @@ module.exports = function shim(SeaUtil) {
     const { TextEncoder, TextDecoder } = (() => require("text-encoding"))();
     (function () {
         window = global || window;
-        global.Buffer = global.Buffer || Buffer.Buffer;
+        global.Buffer = global.Buffer || Buffer;
         global.TextEncoder = TextEncoder;
         global.TextDecoder = TextDecoder;
         window.crypto = window.crypto || {};
+        window.localStorage = ()=>{};
         window.crypto.getRandomValues = function getRandomValues(typedArray) {
             var Type;
             if (typedArray instanceof Int8Array) { Type = Int8Array }

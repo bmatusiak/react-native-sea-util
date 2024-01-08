@@ -7,7 +7,7 @@ module.exports = function shim(SeaUtil) {
         global.TextEncoder = TextEncoder;
         global.TextDecoder = TextDecoder;
         window.crypto = window.crypto || {};
-        window.localStorage = ()=>{};
+        window.localStorage = () => { };
         window.crypto.getRandomValues = function getRandomValues(typedArray) {
             var Type;
             if (typedArray instanceof Int8Array) { Type = Int8Array }
@@ -37,7 +37,9 @@ module.exports = function shim(SeaUtil) {
         //     (async () => {
         //         var $msg = await doWork("data", null, function () { }, { name: "sha" })
         //         if ($msg) console.log("doWork-sha", $msg)
-        //         var gun_pair = await doPair();
+        //         var gun_pair;
+        //         gun_pair = await doPair();
+        //         // gun_pair = await doPair(true,"a",["b","c"]);
         //         // gun_pair = {
         //         //     "epriv": "kzFOKjHTcHzjHhhDq-2yRVSeuPDL_bcm6BYFAeMXa6c",
         //         //     "epub": "V9PSJ-SZJ4RiuKzs1pkTmgiJfehfrngjWwJzKKZwIQ8.L5smkg1kXidIZtA2bXBzun_ylX-DWv4Wf7xanuFVsMM",
@@ -60,25 +62,59 @@ module.exports = function shim(SeaUtil) {
         //     })()
         // }, 1000);
 
-        function genKeyPair() {
+        function hash_key(data, additional_data) {
             var ec = new EC('p256');
-            var pair = ec.genKeyPair();
+            var h = ec.hash().update(data)
+            if (additional_data) {
+                if (!(additional_data instanceof Array)) additional_data = [additional_data];
+                for (let i = 0; i < additional_data.length; i++) {
+                    if (!additional_data[i]) continue;
+                    h.update(additional_data[i]);
+                }
+            }
+            return h.digest();
+        }
+
+        function genKeyPair(private_key, additional_data) {
+            var ec = new EC('p256');
+            if (additional_data && !(additional_data instanceof Array))
+                additional_data = [additional_data];
+            var pair;
+            if (private_key) {
+                pair = ec.keyFromPrivate(hash_key(private_key, additional_data))
+            }
+            else
+                pair = ec.genKeyPair();
             var pub = pair.getPublic();
             var x = pub.getX().toBuffer();
             var y = pub.getY().toBuffer();
             var priv = pair.getPrivate().toBuffer();
-            pub = arrayBufToBase64UrlEncode(x) + "." + arrayBufToBase64UrlEncode(y);
+            if (!arrayBufToBase64UrlDecode(x = arrayBufToBase64UrlEncode(x)).length == 32 ||//have a bug where x value was 31 and not 32 ... but i cant produce it.. 
+                !arrayBufToBase64UrlDecode(y = arrayBufToBase64UrlEncode(y)).length == 32)
+                return genKeyPair(1, priv);
+            pub = x + "." + y;
             priv = arrayBufToBase64UrlEncode(priv);
-            return { pub, priv, epub: pub, epriv: priv };
+            return { pub: pub, priv: priv };
         }
 
-        async function doPair() {
-            var { pub, priv } = genKeyPair();
-            var { epub, epriv } = genKeyPair();
-            return { pub, priv, epub, epriv };
+        async function doPair(deterministic, data, add_data) {
+            var pair;
+            if (deterministic) {
+                pair = (() => {
+                    var { pub, priv } = genKeyPair(data, ["s"].concat(add_data));
+                    var { pub: epub, priv: epriv } = genKeyPair(data, ["d"].concat(add_data));
+                    return { pub, priv, epub, epriv };
+                })();
+            } else
+                pair = (() => {
+                    var { pub, priv } = genKeyPair();
+                    var { pub: epub, priv: epriv } = genKeyPair();
+                    return { pub, priv, epub, epriv };
+                })();
+            return pair;
         }
         SEA.pair = doPair;
-        //EAS/PBKDF2
+        
         async function doWork(data, pair, cb, opt) {
             var u;
             var salt = (pair || {}).epub || pair; // epub not recommended, salt should be random!

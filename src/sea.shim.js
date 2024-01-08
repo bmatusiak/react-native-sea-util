@@ -1,7 +1,11 @@
 module.exports = function shim(SeaUtil) {
     const Buffer = (() => require("buffer").Buffer)();
+    const { TextEncoder, TextDecoder } = (() => require("text-encoding"))();
     (function () {
         window = global || window;
+        global.Buffer = global.Buffer || Buffer.Buffer;
+        global.TextEncoder = TextEncoder;
+        global.TextDecoder = TextDecoder;
         window.crypto = window.crypto || {};
         window.crypto.getRandomValues = function getRandomValues(typedArray) {
             var Type;
@@ -262,6 +266,8 @@ module.exports = function shim(SeaUtil) {
             return ~~(new Number('0x' + hexStr).toString(10));
         }
         async function sha256_n(s) {
+            var b2s = !(typeof s == "string");
+            s = new TextEncoder().encode(b2s ? bytes2string(s) : s);
             var r = await SeaUtil.sha256bytes(Buffer.from(s).toString("base64"));
             return u8(Buffer.from(r, "hex"))
         }
@@ -297,8 +303,8 @@ module.exports = function shim(SeaUtil) {
         var shim = { Buffer }
         // shim.crypto = window.crypto || window.msCrypto
         // shim.subtle = (shim.crypto || o).subtle || (shim.crypto || o).webkitSubtle;
-        // shim.TextEncoder = window.TextEncoder;
-        // shim.TextDecoder = window.TextDecoder;
+        shim.TextEncoder = TextEncoder;
+        shim.TextDecoder = TextDecoder;
         shim.random = (len) => shim.Buffer.from(window.crypto.getRandomValues(new Uint8Array(shim.Buffer.alloc(len))));
         shim.parse = function (t, r) {
             return new Promise(function (res, rej) {

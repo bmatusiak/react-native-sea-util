@@ -53,7 +53,7 @@ module.exports = function shim(SeaUtil) {
         //         if ($msg) console.log("doWork", $msg)
         //         var aeskey = await doDerive(gun_pair.epub, gun_pair);
         //         if (aeskey) console.log("doDerive", aeskey);
-        //         var sig = await doSign($msg , gun_pair);
+        //         var sig = await doSign($msg, gun_pair);
         //         if (sig) console.log("doSign", sig);
         //         var ver = await doVerify(sig, gun_pair.pub);
         //         if (ver) console.log("doVerify", ver);
@@ -61,6 +61,10 @@ module.exports = function shim(SeaUtil) {
         //         if (enc) console.log("doEncrypt", enc);
         //         var dec = await doDecrypt(enc, aeskey);
         //         if (dec) console.log("doDecrypt", dec);
+        //         var sig = await doSign({ test: "some_object" }, gun_pair);
+        //         if (sig) console.log("doSign", sig);
+        //         var ver = await doVerify(sig, gun_pair.pub);
+        //         if (ver) console.log("doVerify",typeof ver, ver.test == "some_object" );
         //     })()
         // }, 1000);
 
@@ -131,10 +135,10 @@ module.exports = function shim(SeaUtil) {
                 if (cb) { try { cb(rsha) } catch (e) { console.log(e) } }
                 return rsha;
             }
-            salt = salt || shim.random(9);
+            salt = salt || (await shim.random(9));
             var S = { pbkdf2: { hash: { name: 'SHA-256' }, iter: 100000, ks: 64 } };
             var r = await SeaUtil.pbkdf2(data, salt, S.pbkdf2.iter, S.pbkdf2.ks * 8);
-            data = shim.random(data.length)  // Erase data in case of passphrase
+            data = (await shim.random(data.length))  // Erase data in case of passphrase
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
         }
@@ -209,8 +213,8 @@ module.exports = function shim(SeaUtil) {
                 key = pair.epriv || pair;
             }
             var msg = (typeof data == 'string') ? data : await shim.stringify(data);
-            var iv = Buffer.from(shim.random(15)).toString("base64");
-            var salt = Buffer.from(shim.random(9));
+            var iv = Buffer.from(await shim.random(15)).toString("base64");
+            var salt = Buffer.from(await shim.random(9));
             var tkey = key + bytes2string(salt)
             var pKey = Array.from(await hash256_utf8(tkey));
             msg = Buffer.from(msg).toString("base64");
@@ -330,12 +334,15 @@ module.exports = function shim(SeaUtil) {
 
             return new Uint8Array(bytes);
         }
+        async function getRandomValues(len) {
+            return Uint8Array.from(await SeaUtil.randomBytesSync(len));
+        }
         var shim = { Buffer }
         // shim.crypto = window.crypto || window.msCrypto
         // shim.subtle = (shim.crypto || o).subtle || (shim.crypto || o).webkitSubtle;
         shim.TextEncoder = TextEncoder;
         shim.TextDecoder = TextDecoder;
-        shim.random = (len) => shim.Buffer.from(window.crypto.getRandomValues(new Uint8Array(shim.Buffer.alloc(len))));
+        shim.random = async (len) => shim.Buffer.from(await getRandomValues(len));
         shim.parse = function (t, r) {
             return new Promise(function (res, rej) {
                 JSON.parseAsync(t, function (err, raw) { err ? rej(err) : res(raw) }, r);

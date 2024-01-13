@@ -17,8 +17,6 @@ import Gun from 'gun';
 import 'gun/sea';
 
 var SEA = Gun.SEA;
-// window.SEA = {};
-// require("./react-native-sea-util")
 
 export default function App() {
   useEffect(() => console.log("SEA.RN", SEA.RN), []);

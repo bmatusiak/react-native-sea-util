@@ -23,7 +23,8 @@ var SEA = Gun.SEA;
 export default function App() {
   useEffect(() => console.log("SEA.RN", SEA.RN), []);
   useEffect(() => {
-    runTest()
+    if(!SEA.RN)
+      runTest()
   }, []);
   return (
     <View>
@@ -65,7 +66,7 @@ function runTest_sign() {
     // console.log(ECDSA_pair);
     var sig = (await SEA.sign(TEST_DATA, ECDSA_pair, null, { raw: 1 })).s;
     // console.log(sig)
-    var verifyed = await NativeModules.SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_dd, sig);
+    // var verifyed = await NativeModules.SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_dd, sig);
     // console.log(verifyed)
     sig = await NativeModules.SeaUtil.sign(ECDSA_pair.priv, TEST_DATA_dd);
     // console.log(sig)

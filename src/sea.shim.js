@@ -37,22 +37,23 @@ module.exports = function shim(SeaUtil) {
         // setTimeout(function () {
         //     (async () => {
         //         var $msg = await doWork("data", null, function () { }, { name: "sha" })
-        //         if ($msg) console.log("doWork-sha", $msg)
+        //         // if ($msg) 
+        //         console.log("doWork-sha", $msg)
         //         var gun_pair;
-        //         gun_pair = await doPair();
+        //         // gun_pair = await doPair();
         //         // gun_pair = await doPair(true,"a",["b","c"]);
-        //         // gun_pair = {
-        //         //     "epriv": "kzFOKjHTcHzjHhhDq-2yRVSeuPDL_bcm6BYFAeMXa6c",
-        //         //     "epub": "V9PSJ-SZJ4RiuKzs1pkTmgiJfehfrngjWwJzKKZwIQ8.L5smkg1kXidIZtA2bXBzun_ylX-DWv4Wf7xanuFVsMM",
-        //         //     "priv": "Pkl3X-2dOgbplyhQLIpbbV-pUgjhyjUxPL942j9kCSc",
-        //         //     "pub": "BX1AbGMWavegl_37goBJYlNEt18X9TE5a3IZL5yj1mw.on7CNrmgB0JRx9yiHi1-SCPvDlmsVGBdFQ2cxnziGI4"
-        //         // };
-        //         console.log("doPair", gun_pair);
+        //         gun_pair = {
+        //             "epriv": "kzFOKjHTcHzjHhhDq-2yRVSeuPDL_bcm6BYFAeMXa6c",
+        //             "epub": "V9PSJ-SZJ4RiuKzs1pkTmgiJfehfrngjWwJzKKZwIQ8.L5smkg1kXidIZtA2bXBzun_ylX-DWv4Wf7xanuFVsMM",
+        //             "priv": "Pkl3X-2dOgbplyhQLIpbbV-pUgjhyjUxPL942j9kCSc",
+        //             "pub": "BX1AbGMWavegl_37goBJYlNEt18X9TE5a3IZL5yj1mw.on7CNrmgB0JRx9yiHi1-SCPvDlmsVGBdFQ2cxnziGI4"
+        //         };
+        //         // console.log("doPair", gun_pair);
         //         $msg = await doWork($msg, "salty");
         //         if ($msg) console.log("doWork", $msg)
         //         var aeskey = await doDerive(gun_pair.epub, gun_pair);
         //         if (aeskey) console.log("doDerive", aeskey);
-        //         var sig = await doSign($msg, gun_pair);
+        //         var sig = await doSign($msg , gun_pair);
         //         if (sig) console.log("doSign", sig);
         //         var ver = await doVerify(sig, gun_pair.pub);
         //         if (ver) console.log("doVerify", ver);
@@ -115,7 +116,7 @@ module.exports = function shim(SeaUtil) {
             return pair;
         }
         SEA.pair = doPair;
-        
+
         async function doWork(data, pair, cb, opt) {
             var u;
             var salt = (pair || {}).epub || pair; // epub not recommended, salt should be random!
@@ -126,17 +127,14 @@ module.exports = function shim(SeaUtil) {
             }
             data = (typeof data == 'string') ? data : await shim.stringify(data);
             if ('sha' === (opt.name || '').toLowerCase().slice(0, 3)) {
-                var rsha = shim.Buffer.from(await sha256_n(data), 'binary').toString(opt.encode || 'base64')
+                var rsha = shim.Buffer.from(await hash256(data), 'binary').toString(opt.encode || 'base64')
                 if (cb) { try { cb(rsha) } catch (e) { console.log(e) } }
                 return rsha;
             }
             salt = salt || shim.random(9);
             var S = { pbkdf2: { hash: { name: 'SHA-256' }, iter: 100000, ks: 64 } };
-            var work = await SeaUtil.pbkdf2(data, salt, S.pbkdf2.iter, S.pbkdf2.ks * 8, "sha256");
-            // var w = await SEA.work(data, salt);//{hash: {name : 'SHA-256'}, iter: 100000, ks: 64};
-
+            var r = await SeaUtil.pbkdf2(data, salt, S.pbkdf2.iter, S.pbkdf2.ks * 8);
             data = shim.random(data.length)  // Erase data in case of passphrase
-            var r = Buffer.from(work, "hex").toString(opt.encode || 'base64');
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
         }
@@ -150,16 +148,8 @@ module.exports = function shim(SeaUtil) {
             }
             var pub = key.epub || key;
             // var epub = pair.epub;
-            var epriv = pair.epriv
-
-            var parsedPair = u8(Buffer.concat([
-                Buffer.from([4]),
-                arrayBufToBase64UrlDecode(pub.split(".")[0]),
-                arrayBufToBase64UrlDecode(pub.split(".")[1])
-            ]))
-            var $key = ECDH.keyFromPrivate(arrayBufToBase64UrlDecode(epriv));
-            var derived = arrayBufToBase64UrlEncode($key.derive(ECDH.keyFromPublic(parsedPair).getPublic()).toBuffer())
-            var r = derived;
+            var epriv = pair.epriv || pair;
+            var r = await NativeModules.SeaUtil.secret(pub, epriv);
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
         }
@@ -177,25 +167,10 @@ module.exports = function shim(SeaUtil) {
             opt.ok = "?";
             // SEA.I // verify is free! Requires no user permission.
             var pub = pair.pub || pair;
-
-            var parsedPair = u8(Buffer.concat([
-                Buffer.from([4]),
-                arrayBufToBase64UrlDecode(pub.split(".")[0]),
-                arrayBufToBase64UrlDecode(pub.split(".")[1])
-            ]))
-            var key = ECDSA.keyFromPublic(u8(parsedPair));
-            // var parsedData = JSON.parse(data.substring(3, data.length));
-            var dataHash = await sha256_n(await sha256_n(json.m));
-            var sig = u8(Buffer.from(json.s, "base64"))
-            var rs = sig.slice(0, 32);
-            var s = sig.slice(32);
-            var sig_ = {
-                r: u8(rs),
-                s: u8(s)
-            }
-            var check = key.verify(dataHash, sig_)
-            var r = check ? await shim.S.parse(json.m) : u;
+            var json_dd = await hash256(await hash256(json.m));
+            var check = await NativeModules.SeaUtil.verify(pub, json_dd, json.s);
             if (!check) { throw "Signature did not match." }
+            var r = check ? await shim.S.parse(json.m) : u;
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
         }
@@ -214,17 +189,9 @@ module.exports = function shim(SeaUtil) {
             if (SEA.verify && SEA.opt.check(check)) return;
             // var pub = pair.pub;
             var priv = pair.priv;
-
-            var key = ECDSA.keyFromPrivate(arrayBufToBase64UrlDecode(priv));
-            var s1 = await sha256_n(json);
-            console.log(s1)
-            var s2 = await sha256_n(s1);
-            console.log(s2)
-            var sig = key.sign(Array.from(s2));
-            var r = sig.r.toBuffer();
-            var s = sig.s.toBuffer();
-            var rs = Buffer.concat([r, s]);
-            sig = { m: json, s: rs.toString("base64") };
+            var json_dd = await hash256(await hash256(json));
+            var siged = await NativeModules.SeaUtil.sign(priv, json_dd);
+            var sig = { m: json, s: siged };
             if (!opt.raw) { sig = 'SEA' + await shim.stringify(sig) }
             if (cb) { try { cb(sig) } catch (e) { console.log(e) } }
             return sig;
@@ -245,10 +212,10 @@ module.exports = function shim(SeaUtil) {
             var iv = Buffer.from(shim.random(15)).toString("base64");
             var salt = Buffer.from(shim.random(9));
             var tkey = key + bytes2string(salt)
-            var pKey = Array.from(await sha256_utf8_n(tkey));
+            var pKey = Array.from(await hash256_utf8(tkey));
             msg = Buffer.from(msg).toString("base64");
             pKey = Buffer.from(pKey).toString("base64");
-            var ct = await SeaUtil.encrypt_aes_gcm(msg, pKey, iv);
+            var ct = await SeaUtil.encrypt(msg, pKey, iv);
             var r = {
                 ct,
                 s: salt.toString("base64"),
@@ -270,11 +237,11 @@ module.exports = function shim(SeaUtil) {
             }
             var json = await shim.S.parse(data);
             var tkey = key + bytes2string(Buffer.from(json.s, "base64"))
-            var pKey = Array.from(await sha256_utf8_n(tkey));
+            var pKey = Array.from(await hash256_utf8(tkey));
             var ctx = u8(Buffer.from(json.ct, "base64"));
             var tag = ctx.slice(ctx.length - 16, ctx.length);
             var ct = ctx.slice(0, ctx.length - 16);
-            var r = await SeaUtil.decrypt_aes_gcm(
+            var r = await SeaUtil.decrypt(
                 Buffer.from(ct).toString("base64"),
                 Buffer.from(pKey).toString("base64"),
                 json.iv,
@@ -291,15 +258,27 @@ module.exports = function shim(SeaUtil) {
         function u8(a) {
             return Uint8Array.from(a);
         }
+        function hash256(s) {
+            return sha256_native(s);
+            async function sha256_native(s) {
+                return await SeaUtil.sha256(string2bytes(s));
+            }
+        }
+        function hash256_utf8(s) {
+            return sha256_native(s);
+            async function sha256_native(s) {
+                if (!(typeof s == "string")) s = bytes2string(s);
+                return await SeaUtil.sha256_utf8(s)
+            }
+        }
         function bytes2string(bytes) {
-            var ret = Array.from(bytes).map(function chr(c) {
+            return Array.from(bytes).map(function chr(c) {
                 return String.fromCharCode(c);
             }).join('');
-            return ret;
         }
         function string2bytes(s) {
-            if(!(typeof s == "string"))
-            s = bytes2string(s);
+            if (!(typeof s == "string"))
+                s = bytes2string(s);
             var len = s.length;
             var bytes = [];
             for (var i = 0; i < len; i++) bytes.push(0);
@@ -315,18 +294,18 @@ module.exports = function shim(SeaUtil) {
             s = new TextEncoder().encode(b2s ? bytes2string(s) : s);
             var r = await SeaUtil.sha256bytes(Buffer.from(s).toString("base64"));
             var x = Buffer.from(r, "hex");
-            console.log("n1",Array.from(x))
+            console.log("n1", Array.from(x))
             return u8(x)
         }
-        async function sha256_n(s) {
-            var r = await SeaUtil.sha256_bytes(string2bytes(s));
-            return new Uint8Array(Buffer.from(r));
-        }
-        async function sha256_utf8_n(s) {
-            const digest = await SeaUtil.sha256(s);
-            const hash = Buffer.from(digest.match(/.{2}/g).map(hexStrToDec));
-            return hash;
-        }
+        // async function sha256_n(s) {
+        //     var r = await SeaUtil.sha256_bytes(string2bytes(s));
+        //     return new Uint8Array(Buffer.from(r));
+        // }
+        // async function sha256_utf8_n(s) {
+        //     const digest = await SeaUtil.sha256(s);
+        //     const hash = Buffer.from(digest.match(/.{2}/g).map(hexStrToDec));
+        //     return hash;
+        // }
         function u2f_unb64(s) {
             s = s.replace(/-/g, '+').replace(/_/g, '/');
             return atob(s + '==='.slice((s.length + 3) % 4));

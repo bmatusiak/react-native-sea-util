@@ -29,6 +29,7 @@ module.exports = function shim(SeaUtil) {
     const elliptic = require("elliptic");//pair/secret/sign/verify
     const SEA = (function (window) {
         var SEA = window.SEA || {};
+        SEA.RN = true;
         var EC = elliptic.ec;
         var ECDH = new EC('p256');
         var ECDSA = new EC('p256');
@@ -215,7 +216,11 @@ module.exports = function shim(SeaUtil) {
             var priv = pair.priv;
 
             var key = ECDSA.keyFromPrivate(arrayBufToBase64UrlDecode(priv));
-            var sig = key.sign(await sha256_n(await sha256_n(json)));
+            var s1 = await sha256_n(json);
+            console.log(s1)
+            var s2 = await sha256_n(s1);
+            console.log(s2)
+            var sig = key.sign(Array.from(s2));
             var r = sig.r.toBuffer();
             var s = sig.s.toBuffer();
             var rs = Buffer.concat([r, s]);
@@ -284,7 +289,7 @@ module.exports = function shim(SeaUtil) {
         //------------
 
         function u8(a) {
-            return new Uint8Array(a);
+            return Uint8Array.from(a);
         }
         function bytes2string(bytes) {
             var ret = Array.from(bytes).map(function chr(c) {
@@ -292,21 +297,30 @@ module.exports = function shim(SeaUtil) {
             }).join('');
             return ret;
         }
-        // function string2bytes(s) {
-        //     var len = s.length;
-        //     var bytes = [];
-        //     for (var i = 0; i < len; i++) bytes.push(0);
-        //     for (var j = 0; j < len; j++) bytes[j] = s.charCodeAt(j);
-        //     return bytes;
-        // }
+        function string2bytes(s) {
+            if(!(typeof s == "string"))
+            s = bytes2string(s);
+            var len = s.length;
+            var bytes = [];
+            for (var i = 0; i < len; i++) bytes.push(0);
+            for (var j = 0; j < len; j++) bytes[j] = s.charCodeAt(j);
+            return bytes;
+        }
         function hexStrToDec(hexStr) {
             return ~~(new Number('0x' + hexStr).toString(10));
         }
-        async function sha256_n(s) {
+        async function sha256_n1(s) {
+            sha256_n2(s);
             var b2s = !(typeof s == "string");
             s = new TextEncoder().encode(b2s ? bytes2string(s) : s);
             var r = await SeaUtil.sha256bytes(Buffer.from(s).toString("base64"));
-            return u8(Buffer.from(r, "hex"))
+            var x = Buffer.from(r, "hex");
+            console.log("n1",Array.from(x))
+            return u8(x)
+        }
+        async function sha256_n(s) {
+            var r = await SeaUtil.sha256_bytes(string2bytes(s));
+            return new Uint8Array(Buffer.from(r));
         }
         async function sha256_utf8_n(s) {
             const digest = await SeaUtil.sha256(s);

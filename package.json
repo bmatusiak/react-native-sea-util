@@ -41,16 +41,18 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
+  "dependencies": {
+    "text-encoding": "^0.7.0",
+    "buffer": "^6.0.3",
+    "elliptic": "^6.5.4"
+  },
   "devDependencies": {
     "@types/node": "^20.10.7",
     "@types/react": "~17.0.21",
     "@types/react-native": "0.70.0",
-    "buffer": "^6.0.3",
-    "elliptic": "^6.5.4",
     "pod-install": "^0.1.0",
     "react": "18.2.0",
     "react-native": "0.73.1",
-    "text-encoding": "^0.7.0",
     "typescript": "^5.0.2"
   },
   "resolutions": {

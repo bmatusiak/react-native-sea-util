@@ -149,7 +149,7 @@ module.exports = function shim(SeaUtil) {
             var pub = key.epub || key;
             // var epub = pair.epub;
             var epriv = pair.epriv || pair;
-            var r = await NativeModules.SeaUtil.secret(pub, epriv);
+            var r = await SeaUtil.secret(pub, epriv);
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
         }
@@ -168,7 +168,7 @@ module.exports = function shim(SeaUtil) {
             // SEA.I // verify is free! Requires no user permission.
             var pub = pair.pub || pair;
             var json_dd = await hash256(await hash256(json.m));
-            var check = await NativeModules.SeaUtil.verify(pub, json_dd, json.s);
+            var check = await SeaUtil.verify(pub, json_dd, json.s);
             if (!check) { throw "Signature did not match." }
             var r = check ? await shim.S.parse(json.m) : u;
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
@@ -190,7 +190,7 @@ module.exports = function shim(SeaUtil) {
             // var pub = pair.pub;
             var priv = pair.priv;
             var json_dd = await hash256(await hash256(json));
-            var siged = await NativeModules.SeaUtil.sign(priv, json_dd);
+            var siged = await SeaUtil.sign(priv, json_dd);
             var sig = { m: json, s: siged };
             if (!opt.raw) { sig = 'SEA' + await shim.stringify(sig) }
             if (cb) { try { cb(sig) } catch (e) { console.log(e) } }

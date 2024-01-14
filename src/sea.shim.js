@@ -34,43 +34,43 @@ module.exports = function shim(SeaUtil) {
         var ECDH = new EC('p256');
         var ECDSA = new EC('p256');
 
-        setTimeout(function () {
-            (async () => {
-                var $msg = await doWork("data", null, function () { }, { name: "sha" })
-                // if ($msg) 
-                console.log("doWork-sha", $msg)
-                var gun_pair;
-                // gun_pair = await doPair();
-                // gun_pair = await doPair(true,"a",["b","c"]);
-                gun_pair = {
-                    "epriv": "kzFOKjHTcHzjHhhDq-2yRVSeuPDL_bcm6BYFAeMXa6c",
-                    "epub": "V9PSJ-SZJ4RiuKzs1pkTmgiJfehfrngjWwJzKKZwIQ8.L5smkg1kXidIZtA2bXBzun_ylX-DWv4Wf7xanuFVsMM",
-                    "priv": "Pkl3X-2dOgbplyhQLIpbbV-pUgjhyjUxPL942j9kCSc",
-                    "pub": "BX1AbGMWavegl_37goBJYlNEt18X9TE5a3IZL5yj1mw.on7CNrmgB0JRx9yiHi1-SCPvDlmsVGBdFQ2cxnziGI4"
-                };
-                // console.log("doPair", gun_pair);
-                $msg = await doWork($msg, "salty");
-                if ($msg) console.log("doWork", $msg)
-                var aeskey = await doDerive(gun_pair.epub, gun_pair);
-                if (aeskey) console.log("doDerive", aeskey);
-                var sig = await doSign($msg, gun_pair);
-                if (sig) console.log("doSign", sig);
-                var ver = await doVerify(sig, gun_pair.pub);
-                if (ver) console.log("doVerify", ver);
-                var enc = await doEncrypt($msg, aeskey);
-                if (enc) console.log("doEncrypt", enc);
-                var dec = await doDecrypt(enc, aeskey);
-                if (dec) console.log("doDecrypt", dec);
+        // setTimeout(function () {
+        //     (async () => {
+        //         var $msg = await doWork("data", null, function () { }, { name: "sha" })
+        //         // if ($msg) 
+        //         console.log("doWork-sha", $msg)
+        //         var gun_pair;
+        //         // gun_pair = await doPair();
+        //         // gun_pair = await doPair(true,"a",["b","c"]);
+        //         gun_pair = {
+        //             "epriv": "kzFOKjHTcHzjHhhDq-2yRVSeuPDL_bcm6BYFAeMXa6c",
+        //             "epub": "V9PSJ-SZJ4RiuKzs1pkTmgiJfehfrngjWwJzKKZwIQ8.L5smkg1kXidIZtA2bXBzun_ylX-DWv4Wf7xanuFVsMM",
+        //             "priv": "Pkl3X-2dOgbplyhQLIpbbV-pUgjhyjUxPL942j9kCSc",
+        //             "pub": "BX1AbGMWavegl_37goBJYlNEt18X9TE5a3IZL5yj1mw.on7CNrmgB0JRx9yiHi1-SCPvDlmsVGBdFQ2cxnziGI4"
+        //         };
+        //         // console.log("doPair", gun_pair);
+        //         $msg = await doWork($msg, "salty");
+        //         if ($msg) console.log("doWork", $msg)
+        //         var aeskey = await doDerive(gun_pair.epub, gun_pair);
+        //         if (aeskey) console.log("doDerive", aeskey);
+        //         var sig = await doSign($msg, gun_pair);
+        //         if (sig) console.log("doSign", sig);
+        //         var ver = await doVerify(sig, gun_pair.pub);
+        //         if (ver) console.log("doVerify", ver);
+        //         var enc = await doEncrypt($msg, aeskey);
+        //         if (enc) console.log("doEncrypt", enc);
+        //         var dec = await doDecrypt(enc, aeskey);
+        //         if (dec) console.log("doDecrypt", dec);
 
 
-                var sig = await doSign({ test: "some_object" }, gun_pair);
-                if (sig) console.log("doSign", sig);
+        //         var sig = await doSign({ test: "some_object" }, gun_pair);
+        //         if (sig) console.log("doSign", sig);
 
-                var ver = await doVerify(sig, gun_pair.pub);
-                if (ver) console.log("doVerify", typeof ver, ver.test == "some_object");
+        //         var ver = await doVerify(sig, gun_pair.pub);
+        //         if (ver) console.log("doVerify", typeof ver, ver.test == "some_object");
 
-            })()
-        }, 1000);
+        //     })()
+        // }, 1000);
 
         function hash_key(data, additional_data) {
             var ec = new EC('p256');
@@ -195,7 +195,6 @@ module.exports = function shim(SeaUtil) {
             var json = await shim.S.parse(data);
             var check = opt.check = opt.check || json;
             if (SEA.verify && SEA.opt.check(check)) return;
-            // var pub = pair.pub;
             var priv = pair.priv;
             var json_dd = await hash256(json);
             var siged = await SeaUtil.sign(priv, json_dd);
@@ -266,11 +265,9 @@ module.exports = function shim(SeaUtil) {
         function u8(a) {
             return Uint8Array.from(a);
         }
-        function hash256(s) {
-            return sha256_native(s);
-            async function sha256_native(s) {
-                return await SeaUtil.sha256(string2bytes(s));
-            }
+        async function hash256(d) {
+            var t = (typeof d == 'string')? d : await shim.stringify(d);
+            return await hash256_utf8(t);
         }
         function hash256_utf8(s) {
             return sha256_native(s);

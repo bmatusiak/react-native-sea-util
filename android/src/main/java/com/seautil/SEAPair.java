@@ -2,6 +2,8 @@ package com.seautil;
 
 import android.util.Base64;
 
+import org.spongycastle.asn1.nist.NISTNamedCurves;
+import org.spongycastle.asn1.x9.X9ECParameters;
 import org.spongycastle.crypto.AsymmetricCipherKeyPair;
 import org.spongycastle.crypto.generators.ECKeyPairGenerator;
 import org.spongycastle.crypto.params.ECDomainParameters;
@@ -18,8 +20,10 @@ import java.security.SecureRandom;
 
 public class SEAPair {
     public  static String[] pair(String curve){
-        ECNamedCurveParameterSpec spec = ECNamedCurveTable.getParameterSpec(curve);
-        ECDomainParameters params = new ECDomainParameters(spec.getCurve(), spec.getG(), spec.getN(), spec.getH());
+        X9ECParameters p = NISTNamedCurves.getByName("P-256");
+        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+//        ECNamedCurveParameterSpec p = ECNamedCurveTable.getParameterSpec(curve);
+//        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         SecureRandom random = new SecureRandom();
         ECKeyPairGenerator pGen = new ECKeyPairGenerator();
         ECKeyGenerationParameters genParam = new ECKeyGenerationParameters(
@@ -46,22 +50,26 @@ public class SEAPair {
     }
 
     public  static ECPublicKeyParameters fromPublic(String curve, String pub){
-        ECNamedCurveParameterSpec p = ECNamedCurveTable.getParameterSpec(curve);
+        X9ECParameters p = NISTNamedCurves.getByName("P-256");
+        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+//        ECNamedCurveParameterSpec p = ECNamedCurveTable.getParameterSpec(curve);
+//        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         String[] xy = pub.split("\\.");
         byte[] X = Base64.decode(xy[0], Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
         byte[] Y = Base64.decode(xy[1], Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
         BigInteger x = BigIntegers.fromUnsignedByteArray(X);
         BigInteger y = BigIntegers.fromUnsignedByteArray(Y);
         ECPoint Q = p.getCurve().createPoint(x, y);
-        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         ECPublicKeyParameters pubKey = new ECPublicKeyParameters(Q, params);
         return pubKey;
     }
     public  static ECPrivateKeyParameters fromPrivate(String curve, String priv){
-        ECNamedCurveParameterSpec p = ECNamedCurveTable.getParameterSpec(curve);
+        X9ECParameters p = NISTNamedCurves.getByName("P-256");
+        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
+//        ECNamedCurveParameterSpec p = ECNamedCurveTable.getParameterSpec(curve);
+//        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         byte[] D = Base64.decode(priv, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
         BigInteger d = BigIntegers.fromUnsignedByteArray(D);
-        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         ECPrivateKeyParameters privKey = new ECPrivateKeyParameters( d, params);
         return privKey;
     }

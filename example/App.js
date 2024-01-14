@@ -21,24 +21,87 @@ var SEA = Gun.SEA;
 export default function App() {
   useEffect(() => console.log("SEA.RN", SEA.RN), []);
   useEffect(() => {
-    if(!SEA.RN)
-      runTest()
+    // if (!SEA.RN)
+    runTest();
+    // runTest2();
   }, []);
   return (
     <View>
-      <Button title="start" onPress={() => runTest()}></Button>
+      <Button title="start" onPress={() => runTest2()}></Button>
+      <Button title="gun" onPress={() => runTest_gun()}></Button>
       {typeof PolyfillCrypto == "undefined" ? null : (<PolyfillCrypto />)}
     </View>
   )
 }
 
-var TEST_DATA = "Hello World"
 var TEST_PAIR = {
   epriv: "KaELXpFoKub7Vqc4OoZgWHSqGKqpF1wzpyPMTdmwB9s",
   epub: "vBq2Ew8zVvSfhyX7aAnbossf_cH88ODH9SpMERRAdbw.A6h3c7pVwFgy6HU0YJgM-CcTvFE8YLKdC-CjafQnQ2Q",
   priv: "_caPAkM8rsUXXWUNenlIW59oR3aqPe45vj4KoFvwA40",
   pub: "AQwRpLMdbvy24aiiMmnmwhNMnqxvlvTKGfFeBpagRGA.wsADt2LRuLnZEkhWHyVOAZIWFyXx3o8Ono6oOwCVdZk"
 };
+
+function runTest2() {
+  console.log("-------START-----");
+  (async function () {
+    var ECDSA_pair = await NativeModules.SeaUtil.pair();
+    var TEST_DATA_d = await hash256(TEST_DATA);
+
+    var sig = await SeaUtil.test_sign(ECDSA_pair.priv, ECDSA_pair.pub, TEST_DATA_d);
+    console.log(sig);
+
+    var verify = await SeaUtil.test_verify(ECDSA_pair.priv, ECDSA_pair.pub, TEST_DATA_d, sig);
+    console.log(verify);
+
+    var d = { m: TEST_DATA, s: sig };
+    d = 'SEA' + JSON.stringify(d)
+    // console.log(d)
+    var sig = await SEA.verify(d, ECDSA_pair.pub);
+    console.log(d);
+    console.log(ECDSA_pair.pub);
+    console.log(sig && sig == TEST_DATA ? "WORKS" : "FAILS");
+
+
+    var sig = (await SEA.sign(TEST_DATA, ECDSA_pair, null, { raw: 1 })).s;
+    // console.log(sig)
+    var verifyed = await NativeModules.SeaUtil.test_verify(ECDSA_pair.priv, ECDSA_pair.pub, TEST_DATA_d, sig);
+    console.log(verifyed ? "WORKS" : "FAILS");
+
+
+    // console.log("test sign")
+    // var TEST_DATA_d = await hash256(TEST_DATA);
+    // var TEST_DATA_dd = await hash256(TEST_DATA_d);
+    // var ECDSA_pair = await NativeModules.SeaUtil.pair();
+    // ECDSA_pair = TEST_PAIR;
+    // // console.log(ECDSA_pair);
+    // var sig = (await SEA.sign(TEST_DATA, ECDSA_pair, null, { raw: 1 })).s;
+    // // console.log(sig)
+    // // var verifyed = await NativeModules.SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_dd, sig);
+    // // console.log(verifyed)
+    // sig = await NativeModules.SeaUtil.test(ECDSA_pair.priv, TEST_DATA_dd);
+    // // console.log(sig)
+    // var d = { m: TEST_DATA, s: sig };
+    // d = 'SEA' + JSON.stringify(d)
+    // // console.log(d)
+    // var sig = await SEA.verify(d, ECDSA_pair.pub);
+    // console.log(sig && sig == TEST_DATA ? "WORKS" : "FAILS");
+
+    console.log("--------END------");
+  })();
+}
+function runTest_gun() {
+  console.log("-------START-----");
+  (async function () {
+    var gun = Gun({ peers: ["http://localhost:8765/gun"] })
+    gun.user().auth(TEST_PAIR, function (o) {
+      gun.user().get("hi").put(new Date().getTime()).once(() => cb(pair));
+    })
+    console.log("--------END------");
+  })();
+}
+
+var TEST_DATA = "Hello World"
+
 
 function runTest() {
   console.log("-------START-----");
@@ -58,7 +121,8 @@ function runTest() {
 function runTest_sign() {
   return (async function () {
     console.log("test sign")
-    var TEST_DATA_dd = await hash256(await hash256(TEST_DATA));
+    var TEST_DATA_d = await hash256(TEST_DATA);
+    var TEST_DATA_dd = await hash256(TEST_DATA_d);
     var ECDSA_pair = await NativeModules.SeaUtil.pair();
     ECDSA_pair = TEST_PAIR;
     // console.log(ECDSA_pair);
@@ -66,7 +130,7 @@ function runTest_sign() {
     // console.log(sig)
     // var verifyed = await NativeModules.SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_dd, sig);
     // console.log(verifyed)
-    sig = await NativeModules.SeaUtil.sign(ECDSA_pair.priv, TEST_DATA_dd);
+    sig = await NativeModules.SeaUtil.sign(ECDSA_pair.priv, TEST_DATA_d);
     // console.log(sig)
     var d = { m: TEST_DATA, s: sig };
     d = 'SEA' + JSON.stringify(d)
@@ -80,13 +144,14 @@ function runTest_sign() {
 function runTest_verify() {
   return (async function () {
     console.log("test verify")
-    var TEST_DATA_dd = await hash256(await hash256(TEST_DATA));
+    var TEST_DATA_d = await hash256(TEST_DATA);
+    var TEST_DATA_dd = await hash256(TEST_DATA_d);
     var ECDSA_pair = await NativeModules.SeaUtil.pair();
     ECDSA_pair = TEST_PAIR;
     // console.log(ECDSA_pair);
     var sig = (await SEA.sign(TEST_DATA, ECDSA_pair, null, { raw: 1 })).s;
     // console.log(sig)
-    var verifyed = await NativeModules.SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_dd, sig);
+    var verifyed = await NativeModules.SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_d, sig);
     console.log(verifyed ? "WORKS" : "FAILS");
     console.log("-----------------");
   })();

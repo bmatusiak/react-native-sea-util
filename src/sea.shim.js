@@ -193,8 +193,14 @@ module.exports = function shim(SeaUtil) {
             }
             if (u === data) { throw '`undefined` not allowed.' }
             var json = await shim.S.parse(data);
-            var check = opt.check = opt.check || json;
-            if (SEA.verify && SEA.opt.check(check)) return;
+            var check = opt.check = opt.check || json;    
+            if(SEA.verify && (SEA.opt.check(check) || (check && check.s && check.m))
+            && u !== await SEA.verify(check, pair)){ // don't sign if we already signed it.
+                var r = await shim.S.parse(check);
+                if(!opt.raw){ r = 'SEA' + await shim.stringify(r) }
+                if(cb){ try{ cb(r) }catch(e){console.log(e)} }
+                return r;
+            }
             var priv = pair.priv;
             var json_dd = await hash256(json);
             var siged = await SeaUtil.sign(priv, json_dd);

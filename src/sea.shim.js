@@ -9,6 +9,7 @@ module.exports = function shim(SeaUtil) {
         window.crypto = window.crypto || {};
         window.localStorage = () => { };
         window.crypto.getRandomValues = function getRandomValues(typedArray) {
+            console.log("need to get rid of this")
             var Type;
             if (typedArray instanceof Int8Array) { Type = Int8Array }
             if (typedArray instanceof Uint8Array) { Type = Uint8Array }
@@ -193,12 +194,12 @@ module.exports = function shim(SeaUtil) {
             }
             if (u === data) { throw '`undefined` not allowed.' }
             var json = await shim.S.parse(data);
-            var check = opt.check = opt.check || json;    
-            if(SEA.verify && (SEA.opt.check(check) || (check && check.s && check.m))
-            && u !== await SEA.verify(check, pair)){ // don't sign if we already signed it.
+            var check = opt.check = opt.check || json;
+            if (SEA.verify && (SEA.opt.check(check) || (check && check.s && check.m))
+                && u !== await SEA.verify(check, pair)) { // don't sign if we already signed it.
                 var r = await shim.S.parse(check);
-                if(!opt.raw){ r = 'SEA' + await shim.stringify(r) }
-                if(cb){ try{ cb(r) }catch(e){console.log(e)} }
+                if (!opt.raw) { r = 'SEA' + await shim.stringify(r) }
+                if (cb) { try { cb(r) } catch (e) { console.log(e) } }
                 return r;
             }
             var priv = pair.priv;
@@ -272,7 +273,7 @@ module.exports = function shim(SeaUtil) {
             return Uint8Array.from(a);
         }
         async function hash256(d) {
-            var t = (typeof d == 'string')? d : await shim.stringify(d);
+            var t = (typeof d == 'string') ? d : await shim.stringify(d);
             return await hash256_utf8(t);
         }
         function hash256_utf8(s) {
@@ -342,7 +343,7 @@ module.exports = function shim(SeaUtil) {
             return new Uint8Array(bytes);
         }
         async function getRandomValues(len) {
-            return Uint8Array.from(await SeaUtil.randomBytesSync(len));
+            return Uint8Array.from(await SeaUtil.randomBytes(len));
         }
         var shim = { Buffer }
         // shim.crypto = window.crypto || window.msCrypto

@@ -7,10 +7,11 @@ import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.uimanager.ViewManager;
 
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import org.spongycastle.jce.provider.BouncyCastleProvider;
 public class SeaUtilPackage implements ReactPackage {
   @NonNull
   @Override
@@ -24,5 +25,9 @@ public class SeaUtilPackage implements ReactPackage {
   @Override
   public List<ViewManager> createViewManagers(@NonNull ReactApplicationContext reactContext) {
     return Collections.emptyList();
+  }
+
+  static {
+    Security.addProvider(new BouncyCastleProvider());
   }
 }

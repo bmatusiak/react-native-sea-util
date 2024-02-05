@@ -1,31 +1,47 @@
 # react-native-sea-util
 
-gun sea util for react-native
+SEA crypto graphic utilities, for react native
+
+* Android Suppot: YES
+* iOS Support: NO
+
+
 
 ## Installation
 
 ```sh
-npm install react-native-sea-util
+npm install github:bmatusiak/react-native-sea-util
 ```
 
 ## Usage
 
 ```js
-import { multiply } from 'react-native-sea-util';
-
-// ...
-
-const result = await multiply(3, 7);
+import 'react-native-sea-util';
+import Gun from 'gun';
+import SEA from 'gun/sea'
 ```
 
-## Contributing
+## References
 
-See the [contributing guide](CONTRIBUTING.md) to learn how to contribute to the repository and the development workflow.
+Inspired by: https://github.com/tectiv3/react-native-aes
 
-## License
+KeyType is specified in [RFC 6090](https://datatracker.ietf.org/doc/html/rfc6090)
 
-MIT
+### Signature
 
----
+https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/sign#ecdsa
 
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
+https://datatracker.ietf.org/doc/html/rfc4754#section-3
+
+### work
+
+PBKDF2 is specified in [RFC 2898](https://datatracker.ietf.org/doc/html/rfc2898).
+
+SHA-256 is specified in [NIST.FIPS.180-4.pdf](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)
+
+### spongycastle references
+
+https://github.com/rtyley/spongycastle
+
+[ECTest.java](https://github.com/rtyley/spongycastle/blob/spongy-master/core/src/test/java/org/spongycastle/crypto/test/ECTest.java)
+

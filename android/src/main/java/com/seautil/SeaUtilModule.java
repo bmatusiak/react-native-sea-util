@@ -7,220 +7,213 @@ import androidx.annotation.NonNull;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.module.annotations.ReactModule;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
 import java.util.UUID;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-
-import org.spongycastle.crypto.Digest;
-import org.spongycastle.crypto.digests.SHA1Digest;
-import org.spongycastle.crypto.digests.SHA256Digest;
-import org.spongycastle.crypto.digests.SHA512Digest;
-import org.spongycastle.crypto.generators.PKCS5S2ParametersGenerator;
-import org.spongycastle.crypto.params.KeyParameter;
 
 @ReactModule(name = SeaUtilModule.NAME)
 public class SeaUtilModule extends ReactContextBaseJavaModule {
-  public static final String NAME = "SeaUtil";
+    public static final String NAME = "SeaUtil";
 
-  private static final String KEY_ALGORITHM = "AES";;
-  private static final int GCM_TAG_LENGTH = 16;
-  public SeaUtilModule(ReactApplicationContext reactContext) {
-    super(reactContext);
-  }
+    private static final String KEY_ALGORITHM = "AES";
+    ;
+    private static final int GCM_TAG_LENGTH = 16;
 
-  @Override
-  @NonNull
-  public String getName() {
-    return NAME;
-  }
-
-  @ReactMethod
-  public void encrypt_aes_gcm(String data, String key, String iv, Promise promise) {
-    try {
-      String result = encrypt_aes_gcm(data, key, iv);
-      promise.resolve(result);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+    public SeaUtilModule(ReactApplicationContext reactContext) {
+        super(reactContext);
     }
-  }
 
-  @ReactMethod
-  public void decrypt_aes_gcm(String data, String pwd, String iv, String tag, Promise promise) {
-    try {
-      String strs = decrypt_aes_gcm(data, pwd, iv, tag);
-      promise.resolve(strs);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+    @Override
+    @NonNull
+    public String getName() {
+        return NAME;
     }
-  }
 
-  @ReactMethod
-  public void pbkdf2(String pwd, String salt, Integer cost, Integer length, String algorithm, Promise promise) {
-    try {
-      String strs = pbkdf2(pwd, salt, cost, length, algorithm);
-      promise.resolve(strs);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+
+    @ReactMethod
+    public void encrypt(final String data, final String key, final String iv, Promise promise) {
+        try {
+            String result = SEACrypto.encrypt_aes_gcm(data, key, iv);
+            promise.resolve(result);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
     }
-  }
 
-  @ReactMethod
-  public void sha256(String data, Promise promise) {
-    try {
-      String result = shaX(data, "SHA-256");
-      promise.resolve(result);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+    @ReactMethod
+    public void decrypt(final String data, final String pwd, final String iv, final String tag, Promise promise) {
+        try {
+            String strs = SEACrypto.decrypt_aes_gcm(data, pwd, iv, tag);
+            promise.resolve(strs);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
     }
-  }
 
-  @ReactMethod
-  public void sha256bytes(String data, Promise promise) {
-    try {
-      String result = shaXbytes(data, "SHA-256");
-      promise.resolve(result);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+    @ReactMethod
+    public void pbkdf2(String pwd, String salt, Integer iter, Integer bitSize, Promise promise) {
+        try {
+            String strs = SEAWork.pbkdf2(pwd, salt, iter, bitSize);
+            promise.resolve(strs);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
     }
-  }
 
-  @ReactMethod
-  public void sha1(String data, Promise promise) {
-    try {
-      String result = shaX(data, "SHA-1");
-      promise.resolve(result);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+    @ReactMethod
+    public void randomUuid(Promise promise) {
+        try {
+            String result = UUID.randomUUID().toString();
+            promise.resolve(result);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
     }
-  }
 
-  @ReactMethod
-  public void sha512(String data, Promise promise) {
-    try {
-      String result = shaX(data, "SHA-512");
-      promise.resolve(result);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+    @ReactMethod
+    public void randomBytes(final Integer length, Promise promise) {
+        try {
+            byte[] key = new byte[length];
+            SecureRandom rand = new SecureRandom();
+            rand.nextBytes(key);
+            WritableArray map = new WritableNativeArray();
+            for (int j = 0; j < key.length; j++) {
+                map.pushInt(key[j]);
+            }
+            promise.resolve(map);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
     }
-  }
 
-  @ReactMethod
-  public void randomUuid(Promise promise) {
-    try {
-      String result = UUID.randomUUID().toString();
-      promise.resolve(result);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+    @ReactMethod(isBlockingSynchronousMethod = true)
+    public WritableArray randomBytesSync(final Integer length) {
+        WritableArray map = new WritableNativeArray();
+        try {
+            byte[] key = new byte[length];
+            SecureRandom rand = new SecureRandom();
+            rand.nextBytes(key);
+            for (int j = 0; j < key.length; j++) {
+                map.pushInt(key[j]);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);//break runtime if RNG is bad
+        }
+        return map;
     }
-  }
 
-  @ReactMethod
-  public void randomBytes(Integer length, Promise promise) {
-    try {
-      byte[] key = new byte[length];
-      SecureRandom rand = new SecureRandom();
-      rand.nextBytes(key);
-      String keyHex = bytesToHex(key);
-      promise.resolve(keyHex);
-    } catch (Exception e) {
-      promise.reject("-1", e.getMessage());
+    @ReactMethod
+    public void sha256(final ReadableArray toHash, Promise promise) {
+        String algo = "SHA-256";
+        try {
+            byte[] digest = SEAWork.digestBytes(algo, SEAUtil.readableArrayToByteArray(toHash));
+            promise.resolve(SEAUtil.byteArrayToWritableNativeArray(digest));
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            promise.reject(algo, e.getMessage());
+        }
     }
-  }
 
-  @ReactMethod(isBlockingSynchronousMethod = true)
-  public WritableArray randomBytesSync( Integer length) {
-    byte[] key = new byte[length];
-    SecureRandom rand = new SecureRandom();
-    rand.nextBytes(key);
-    WritableArray map = new WritableNativeArray();
-    for ( int j = 0; j < key.length; j++ ) {
-      map.pushInt(key[j]);
+    @ReactMethod(isBlockingSynchronousMethod = true)
+    public WritableArray sha256Sync(final ReadableArray toHash) {
+        String algo = "SHA-256";
+        WritableArray map;
+        try {
+            byte[] digest = SEAWork.digestBytes(algo, SEAUtil.readableArrayToByteArray(toHash));
+            map = SEAUtil.byteArrayToWritableNativeArray(digest);
+        } catch (Exception e) {
+            throw new RuntimeException(e);//break runtime if RNG is bad
+        }
+        return map;
     }
-    return map;
-  }
 
-  private String shaX(String data, String algorithm) throws Exception {
-    MessageDigest md = MessageDigest.getInstance(algorithm);
-    md.update(data.getBytes());
-    byte[] digest = md.digest();
-    return bytesToHex(digest);
-  }
-
-  private String shaXbytes(String data, String algorithm) throws Exception {
-    MessageDigest md = MessageDigest.getInstance(algorithm);
-    md.update(Base64.decode(data, Base64.NO_WRAP));
-    byte[] digest = md.digest();
-    return bytesToHex(digest);
-  }
-
-
-  private static String pbkdf2(String pwd, String salt, Integer cost, Integer length, String algorithm)
-          throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedEncodingException
-  {
-    Digest algorithmDigest = new SHA512Digest();
-    if (algorithm.equalsIgnoreCase("sha1")){
-      algorithmDigest = new SHA1Digest();
+    @ReactMethod
+    public void sha256_utf8(final String toHash, Promise promise) {
+        String algo = "SHA-256";
+        try {
+            byte[] digest = SEAWork.digestBytes(algo, toHash.getBytes());
+            promise.resolve(SEAUtil.byteArrayToWritableNativeArray(digest));
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            promise.reject(algo, e.getMessage());
+        }
     }
-    if (algorithm.equalsIgnoreCase("sha256")){
-      algorithmDigest = new SHA256Digest();
-    }
-    if (algorithm.equalsIgnoreCase("sha512")){
-      algorithmDigest = new SHA512Digest();
-    }
-    PKCS5S2ParametersGenerator gen = new PKCS5S2ParametersGenerator(algorithmDigest);
-    gen.init(pwd.getBytes("UTF_8"), salt.getBytes("UTF_8"), cost);
-    byte[] key = ((KeyParameter) gen.generateDerivedParameters(length)).getKey();
-    return bytesToHex(key);
-  }
 
-  private static String encrypt_aes_gcm(String text, String keyData, String ivData) throws Exception {
-    SecretKey secretKey = new SecretKeySpec(Base64.decode(keyData, Base64.NO_WRAP), KEY_ALGORITHM);
-    Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-    byte[] iv = Base64.decode(ivData, Base64.NO_WRAP);
-    cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH * 8, iv));
-    byte[] _text = Base64.decode(text, Base64.NO_WRAP);
-    return Base64.encodeToString(cipher.doFinal(_text), Base64.NO_WRAP);
-  }
-
-  private static String decrypt_aes_gcm(String ciphertextData, String keyData, String ivData, String tagData) throws Exception {
-    SecretKey secretKey = new SecretKeySpec(Base64.decode(keyData, Base64.NO_WRAP), KEY_ALGORITHM);
-    Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-    cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH * 8, Base64.decode(ivData, Base64.NO_WRAP)));
-    byte[] ciphertext = Base64.decode(ciphertextData, Base64.NO_WRAP);
-    byte[] tag = Base64.decode(tagData, Base64.NO_WRAP);
-    byte[] combined = new byte[ciphertext.length + tag.length];
-    for (int i = 0; i < combined.length; ++i)
-    {
-      combined[i] = i < ciphertext.length ? ciphertext[i] : tag[i - ciphertext.length];
+    @ReactMethod(isBlockingSynchronousMethod = true)
+    public WritableArray sha256Sync_utf8(final String toHash) {
+        String algo = "SHA-256";
+        WritableArray map;
+        try {
+            byte[] digest = SEAWork.digestBytes(algo, toHash.getBytes());
+            map = SEAUtil.byteArrayToWritableNativeArray(digest);
+        } catch (Exception e) {
+            throw new RuntimeException(e);//break runtime if RNG is bad
+        }
+        return map;
     }
-    return new String(cipher.doFinal(combined), StandardCharsets.UTF_8);
-  }
 
-  public static String bytesToHex(byte[] bytes) {
-    final char[] hexArray = "0123456789abcdef".toCharArray();
-    char[] hexChars = new char[bytes.length * 2];
-    for ( int j = 0; j < bytes.length; j++ ) {
-      int v = bytes[j] & 0xFF;
-      hexChars[j * 2] = hexArray[v >>> 4];
-      hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+    @ReactMethod
+    public void pair(Promise promise) {
+        String[] pair = SEAPair.pair("secp256r1");
+        String[] epair = SEAPair.pair("prime256v1");
+        WritableMap r = new WritableNativeMap();
+        r.putString("priv", pair[0]);
+        r.putString("pub", pair[1]);
+        r.putString("epriv", epair[0]);
+        r.putString("epub", epair[1]);
+        promise.resolve(r);
     }
-    return new String(hexChars);
-  }
-  public static long getUnsignedInt(int x) {
-    return x & (-1L >>> 32);
-  }
+
+//    @ReactMethod
+//    public void sign(final String _privkey, final ReadableArray toHash, Promise promise) {
+//        byte[] M = SEAUtil.readableArrayToByteArray(toHash);
+//        String sig = SEASignLegacy.sign(SEAPair.fromPrivate("secp256r1", _privkey), M);
+//        promise.resolve(sig);
+//    }
+//
+//    @ReactMethod
+//    public void verify(final String _pubKey, final ReadableArray toHash, String b64_sig, Promise promise) {
+//        byte[] M = SEAUtil.readableArrayToByteArray(toHash);
+//        if (SEASignLegacy.verify(SEAPair.fromPublic("secp256r1", _pubKey), M, b64_sig)) {
+//            promise.resolve(true);
+//            return;
+//        }
+//        promise.resolve(false);
+//    }
+
+    @ReactMethod
+    public void sign(final String _privkey, final ReadableArray toHash, Promise promise) {
+        try {
+            byte[] M = SEAUtil.readableArrayToByteArray(toHash);
+            String result = SEASign.sign(_privkey, M);
+            promise.resolve(result);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
+    }
+    @ReactMethod
+    public void verify(final String _pubkey, final ReadableArray toHash,final String b64_sig, Promise promise) {
+        try {
+            byte[] M = SEAUtil.readableArrayToByteArray(toHash);
+            boolean result = SEASign.verify(_pubkey, M, b64_sig);
+            promise.resolve(result);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
+    }
+    @ReactMethod
+    public void secret(final String _pubKey, final String _privKey, Promise promise) {
+        byte[] secret = SEASecret.derive(SEAPair.fromPrivate("prime256v1", _privKey), SEAPair.fromPublic("prime256v1", _pubKey));
+        promise.resolve(Base64.encodeToString(secret, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP));
+    }
+
 }

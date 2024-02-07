@@ -11,19 +11,23 @@ import org.spongycastle.crypto.params.ECKeyGenerationParameters;
 import org.spongycastle.crypto.params.ECPrivateKeyParameters;
 import org.spongycastle.crypto.params.ECPublicKeyParameters;
 import org.spongycastle.jce.ECNamedCurveTable;
+import org.spongycastle.jce.interfaces.ECPrivateKey;
+import org.spongycastle.jce.interfaces.ECPublicKey;
 import org.spongycastle.jce.spec.ECNamedCurveParameterSpec;
+import org.spongycastle.jce.spec.ECParameterSpec;
+import org.spongycastle.jce.spec.ECPrivateKeySpec;
+import org.spongycastle.jce.spec.ECPublicKeySpec;
 import org.spongycastle.math.ec.ECPoint;
 import org.spongycastle.util.BigIntegers;
 
 import java.math.BigInteger;
+import java.security.KeyFactory;
 import java.security.SecureRandom;
 
 public class SEAPair {
-    public  static String[] pair(String curve){
-        X9ECParameters p = NISTNamedCurves.getByName("P-256");
+    public  static String[] pair(){
+        X9ECParameters p = NISTNamedCurves.getByName("P-256");// secp256r1/prime256v1
         ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
-//        ECNamedCurveParameterSpec p = ECNamedCurveTable.getParameterSpec(curve);
-//        ECDomainParameters params = new ECDomainParameters(p.getCurve(), p.getG(), p.getN(), p.getH());
         SecureRandom random = new SecureRandom();
         ECKeyPairGenerator pGen = new ECKeyPairGenerator();
         ECKeyGenerationParameters genParam = new ECKeyGenerationParameters(
@@ -72,5 +76,29 @@ public class SEAPair {
         BigInteger d = BigIntegers.fromUnsignedByteArray(D);
         ECPrivateKeyParameters privKey = new ECPrivateKeyParameters( d, params);
         return privKey;
+    }
+
+    public static String publicFromPrivate(String inputPrivateKey) {
+        String curve = "secp256r1";
+        try {
+            KeyFactory keyFactory = KeyFactory.getInstance("EC", "SC");
+            ECParameterSpec ecSpec = ECNamedCurveTable.getParameterSpec(curve);
+            byte[] privateKeyS = Base64.decode(inputPrivateKey, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
+            ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(BigIntegers.fromUnsignedByteArray(privateKeyS), ecSpec);
+            ECPrivateKey privateKey = (ECPrivateKey) keyFactory.generatePrivate(privateKeySpec);
+            ECPoint Q = ecSpec.getG().multiply(privateKey.getD());
+            ECPublicKeySpec pubSpec = new ECPublicKeySpec(Q, ecSpec);
+            ECPublicKey publicKeyGenerated = (ECPublicKey) keyFactory.generatePublic(pubSpec);
+            ECPoint ecPoint = publicKeyGenerated.getQ();
+            BigInteger x = ecPoint.getAffineXCoord().toBigInteger();
+            BigInteger y = ecPoint.getAffineYCoord().toBigInteger();
+            byte[]  X = BigIntegers.asUnsignedByteArray(x);
+            byte[]  Y = BigIntegers.asUnsignedByteArray(y);
+            return Base64.encodeToString(X, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP)
+                    +"."+
+                    Base64.encodeToString(Y, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP);
+        }catch (Exception  e) {
+            throw new RuntimeException(e);
+        }
     }
 }

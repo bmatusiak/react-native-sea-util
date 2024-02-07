@@ -7,11 +7,14 @@ import {
   View,
 } from 'react-native';
 
-import PolyfillCrypto from 'react-native-webview-crypto';
-import 'react-native-get-random-values';
-import 'gun/lib/mobile';
+// this script need to check VS crypto lib.
 
-// import 'react-native-sea-util'
+//enable this area to test vs webcrypto .
+// import PolyfillCrypto from 'react-native-webview-crypto';
+// import 'react-native-get-random-values';
+// import 'gun/lib/mobile';
+
+import 'react-native-sea-util';
 
 import Gun from 'gun';
 import 'gun/sea';
@@ -21,74 +24,76 @@ var SEA = Gun.SEA;
 export default function App() {
   useEffect(() => console.log("SEA.RN", SEA.RN), []);
   useEffect(() => {
-    // if (!SEA.RN)
-    runTest();
-    // runTest2();
+    (async function () {
+      await runTest();
+      await runTest3();
+      await runTest2();
+    })();
   }, []);
   return (
     <View>
-      <Button title="start" onPress={() => runTest2()}></Button>
-      <Button title="gun" onPress={() => runTest_gun()}></Button>
+      <Button title="start" onPress={() => runTest()}></Button>
+      {/* <Button title="gun" onPress={() => runTest_gun()}></Button> */}
       {typeof PolyfillCrypto == "undefined" ? null : (<PolyfillCrypto />)}
     </View>
   )
 }
 
 var TEST_PAIR = {
-  epriv: "KaELXpFoKub7Vqc4OoZgWHSqGKqpF1wzpyPMTdmwB9s",
-  epub: "vBq2Ew8zVvSfhyX7aAnbossf_cH88ODH9SpMERRAdbw.A6h3c7pVwFgy6HU0YJgM-CcTvFE8YLKdC-CjafQnQ2Q",
-  priv: "_caPAkM8rsUXXWUNenlIW59oR3aqPe45vj4KoFvwA40",
-  pub: "AQwRpLMdbvy24aiiMmnmwhNMnqxvlvTKGfFeBpagRGA.wsADt2LRuLnZEkhWHyVOAZIWFyXx3o8Ono6oOwCVdZk"
+  epriv: "EpOMnime8UQ9Z7EeI2TdQyzyZSJyx9XoyJwR1FQBCRU",
+  epub: "xPieZ1m3DSaMxagysQTv7xf78iAAtOsD5vGj1nDycCg.bxBfyvtmBiTRsqsfgenC4NdVyJ9RwWpH5dsu3hyEizQ",
+  priv: "TS2BPXbfbagNoTlhSj8Yon0Qmgdg3_xPldPI-Sv3aOI",
+  pub: "kW0BHu2NpBvEArX8fr3zwaMObWVLAO8_tcH0UVbzBJk.GzIiFxT2t4lpf34zrDKm_nvi_HmLXxI9cUM2pzICo3E"
 };
 
-function runTest2() {
-  console.log("-------START-----");
-  (async function () {
-    var ECDSA_pair = await NativeModules.SeaUtil.pair();
-    var TEST_DATA_d = await hash256(TEST_DATA);
+async function runTest3() {
+  console.log("-------START-----runTest3");
+  console.log("sign and verify")
+  var ECDSA_pair = await SeaUtil.pair();
+  var TEST_DATA_d = await hash256(TEST_DATA);
 
-    var sig = await SeaUtil.test_sign(ECDSA_pair.priv, ECDSA_pair.pub, TEST_DATA_d);
-    console.log(sig);
+  var sig = await SeaUtil.sign(ECDSA_pair.priv, TEST_DATA_d);
+  // console.log(sig);
 
-    var verify = await SeaUtil.test_verify(ECDSA_pair.priv, ECDSA_pair.pub, TEST_DATA_d, sig);
-    console.log(verify);
+  var verify = await SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_d, sig);
+  console.log(verify ? "WORKS" : "FAILS");
 
-    var d = { m: TEST_DATA, s: sig };
-    d = 'SEA' + JSON.stringify(d)
-    // console.log(d)
-    var sig = await SEA.verify(d, ECDSA_pair.pub);
-    console.log(d);
-    console.log(ECDSA_pair.pub);
-    console.log(sig && sig == TEST_DATA ? "WORKS" : "FAILS");
-
-
-    var sig = (await SEA.sign(TEST_DATA, ECDSA_pair, null, { raw: 1 })).s;
-    // console.log(sig)
-    var verifyed = await NativeModules.SeaUtil.test_verify(ECDSA_pair.priv, ECDSA_pair.pub, TEST_DATA_d, sig);
-    console.log(verifyed ? "WORKS" : "FAILS");
+  var d = { m: TEST_DATA, s: sig };
+  d = 'SEA' + JSON.stringify(d)
+  // console.log(d)
+  var sig = await SEA.verify(d, ECDSA_pair.pub);
+  // console.log(d);
+  // console.log(ECDSA_pair.pub);
+  console.log(sig && sig == TEST_DATA ? "WORKS" : "FAILS");
 
 
-    // console.log("test sign")
-    // var TEST_DATA_d = await hash256(TEST_DATA);
-    // var TEST_DATA_dd = await hash256(TEST_DATA_d);
-    // var ECDSA_pair = await NativeModules.SeaUtil.pair();
-    // ECDSA_pair = TEST_PAIR;
-    // // console.log(ECDSA_pair);
-    // var sig = (await SEA.sign(TEST_DATA, ECDSA_pair, null, { raw: 1 })).s;
-    // // console.log(sig)
-    // // var verifyed = await NativeModules.SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_dd, sig);
-    // // console.log(verifyed)
-    // sig = await NativeModules.SeaUtil.test(ECDSA_pair.priv, TEST_DATA_dd);
-    // // console.log(sig)
-    // var d = { m: TEST_DATA, s: sig };
-    // d = 'SEA' + JSON.stringify(d)
-    // // console.log(d)
-    // var sig = await SEA.verify(d, ECDSA_pair.pub);
-    // console.log(sig && sig == TEST_DATA ? "WORKS" : "FAILS");
+  var sig = (await SEA.sign(TEST_DATA, ECDSA_pair, null, { raw: 1 })).s;
+  // console.log(sig)
+  var verifyed = await SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_d, sig);
+  console.log(verifyed ? "WORKS" : "FAILS");
 
-    console.log("--------END------");
-  })();
+
+  // console.log("test sign")
+  // var TEST_DATA_d = await hash256(TEST_DATA);
+  // var TEST_DATA_dd = await hash256(TEST_DATA_d);
+  // var ECDSA_pair = await NativeModules.SeaUtil.pair();
+  // ECDSA_pair = TEST_PAIR;
+  // // console.log(ECDSA_pair);
+  // var sig = (await SEA.sign(TEST_DATA, ECDSA_pair, null, { raw: 1 })).s;
+  // // console.log(sig)
+  // // var verifyed = await NativeModules.SeaUtil.verify(ECDSA_pair.pub, TEST_DATA_dd, sig);
+  // // console.log(verifyed)
+  // sig = await NativeModules.SeaUtil.test(ECDSA_pair.priv, TEST_DATA_dd);
+  // // console.log(sig)
+  // var d = { m: TEST_DATA, s: sig };
+  // d = 'SEA' + JSON.stringify(d)
+  // // console.log(d)
+  // var sig = await SEA.verify(d, ECDSA_pair.pub);
+  // console.log(sig && sig == TEST_DATA ? "WORKS" : "FAILS");
+
+  console.log("--------END------");
 }
+
 function runTest_gun() {
   console.log("-------START-----");
   (async function () {
@@ -103,19 +108,53 @@ function runTest_gun() {
 var TEST_DATA = "Hello World"
 
 
-function runTest() {
-  console.log("-------START-----");
-  (async function () {
-    await runTest_random();
-    await runTest_hash();
-    await runTest_pbkdf2();
-    await runTest_secret();
-    await runTest_verify();
-    await runTest_sign();
-    await runTest_decrypt();
-    await runTest_encrypt();
-    console.log("--------END------");
-  })();
+async function runTest() {
+  console.log("-------START-----runTest");
+  await runTest_random();
+  await runTest_hash();
+  await runTest_pbkdf2();
+  await runTest_secret();
+  await runTest_verify();
+  await runTest_sign();
+  await runTest_decrypt();
+  await runTest_encrypt();
+  console.log("--------END------");
+}
+
+async function runTest2() {
+  console.log("-------START-----runTest2");
+  var fail = false;
+
+  await SEA.pair(function (pair) {
+    if (!pair) fail = true
+  });
+  if (fail) { console.log("failed:randomPair callback"); return }
+
+  var pub = await SeaUtil.publicFromPrivate(TEST_PAIR.priv);
+  if (!(pub == TEST_PAIR.pub)) fail = true;
+  if (fail) { console.log("failed:publicFromPrivate"); return }
+
+  var epub = await SeaUtil.publicFromPrivate(TEST_PAIR.epriv);
+  if (!(epub == TEST_PAIR.epub)) fail = true;
+  if (fail) { console.log("failed:publicFromPrivate"); return }
+
+  var theTestA = (await SEA.pair()).priv == (await SEA.pair()).priv;
+  if (theTestA) fail = true;
+  if (fail) { console.log("failed:theTestA-should not match"); return }
+
+  var theTesB = (await SEA.pair("deterministic", TEST_PAIR.priv, [TEST_PAIR.epriv, "more data"])).priv == (await SEA.pair("deterministic", TEST_PAIR.priv, TEST_PAIR.epriv)).priv;
+  if (theTesB) fail = true;
+  if (fail) { console.log("failed:theTesB-should not match"); return }
+
+  var theTesC = (await SEA.pair("deterministic", TEST_PAIR.priv, TEST_PAIR.epriv)).priv == (await SEA.pair("deterministic", TEST_PAIR.priv, TEST_PAIR.epriv)).priv;
+  if (!theTesC) fail = true;
+  if (fail) { console.log("failed:theTesC-no match"); return }
+
+  var theTest = (await SEA.pair.pubFromPrivate(TEST_PAIR.epriv)) == TEST_PAIR.epub;
+  if (theTest)
+    console.log("WORKS")
+
+  console.log("--------END------");
 }
 
 function runTest_sign() {

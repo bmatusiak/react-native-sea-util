@@ -45,3 +45,24 @@ https://github.com/rtyley/spongycastle
 
 [ECTest.java](https://github.com/rtyley/spongycastle/blob/spongy-master/core/src/test/java/org/spongycastle/crypto/test/ECTest.java)
 
+
+```
+
+#dev setup
+
+npx react-native@0.70.6 init SEATest --version 0.70.6
+cd ./SEATest
+
+git clone https://github.com/bmatusiak/react-native-sea-util.git
+npm install github:amark/gun github:bmatusiak/gun-rebuild github:bmatusiak/gun-rebuild-sea #new
+
+npm install buffer text-encoding react-native-webview react-native-webview-crypto react-native-get-random-values #old
+
+rm ./App.js #remove app.js
+cp ./react-native-sea-util/example/App.js ./App.js #copy dev file
+
+# remove pretty and eslint configs if needed 
+
+
+
+```

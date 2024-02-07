@@ -24,10 +24,6 @@ import java.util.UUID;
 public class SeaUtilModule extends ReactContextBaseJavaModule {
     public static final String NAME = "SeaUtil";
 
-    private static final String KEY_ALGORITHM = "AES";
-    ;
-    private static final int GCM_TAG_LENGTH = 16;
-
     public SeaUtilModule(ReactApplicationContext reactContext) {
         super(reactContext);
     }
@@ -37,7 +33,6 @@ public class SeaUtilModule extends ReactContextBaseJavaModule {
     public String getName() {
         return NAME;
     }
-
 
     @ReactMethod
     public void encrypt(final String data, final String key, final String iv, Promise promise) {
@@ -163,8 +158,8 @@ public class SeaUtilModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void pair(Promise promise) {
-        String[] pair = SEAPair.pair("secp256r1");
-        String[] epair = SEAPair.pair("prime256v1");
+        String[] pair = SEAPair.pair();
+        String[] epair = SEAPair.pair();
         WritableMap r = new WritableNativeMap();
         r.putString("priv", pair[0]);
         r.putString("pub", pair[1]);
@@ -173,22 +168,15 @@ public class SeaUtilModule extends ReactContextBaseJavaModule {
         promise.resolve(r);
     }
 
-//    @ReactMethod
-//    public void sign(final String _privkey, final ReadableArray toHash, Promise promise) {
-//        byte[] M = SEAUtil.readableArrayToByteArray(toHash);
-//        String sig = SEASignLegacy.sign(SEAPair.fromPrivate("secp256r1", _privkey), M);
-//        promise.resolve(sig);
-//    }
-//
-//    @ReactMethod
-//    public void verify(final String _pubKey, final ReadableArray toHash, String b64_sig, Promise promise) {
-//        byte[] M = SEAUtil.readableArrayToByteArray(toHash);
-//        if (SEASignLegacy.verify(SEAPair.fromPublic("secp256r1", _pubKey), M, b64_sig)) {
-//            promise.resolve(true);
-//            return;
-//        }
-//        promise.resolve(false);
-//    }
+    @ReactMethod
+    public void publicFromPrivate(final String key, Promise promise) {
+        try {
+            String result = SEAPair.publicFromPrivate(key);
+            promise.resolve(result);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
+    }
 
     @ReactMethod
     public void sign(final String _privkey, final ReadableArray toHash, Promise promise) {

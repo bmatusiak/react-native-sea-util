@@ -32,8 +32,8 @@ module.exports = function shim(SeaUtil) {
         var SEA = window.SEA || {};
         SEA.RN = true;
         var EC = elliptic.ec;
-        var ECDH = new EC('p256');
-        var ECDSA = new EC('p256');
+        // var ECDH = new EC('p256');
+        // var ECDSA = new EC('p256');
 
         // setTimeout(function () {
         //     (async () => {
@@ -86,45 +86,42 @@ module.exports = function shim(SeaUtil) {
             return h.digest();
         }
 
-        function genKeyPair(private_key, additional_data) {
-            var ec = new EC('p256');
+        async function genKeyPair(private_key, additional_data) {
             if (additional_data && !(additional_data instanceof Array))
                 additional_data = [additional_data];
-            var pair;
             if (private_key) {
-                pair = ec.keyFromPrivate(hash_key(private_key, additional_data))
+                var priv = arrayBufToBase64UrlEncode(hash_key(private_key, additional_data));
+                var pub = await SeaUtil.publicFromPrivate(priv);
+                return { pub, priv }
             }
-            else
-                pair = ec.genKeyPair();
-            var pub = pair.getPublic();
-            var x = pub.getX().toBuffer();
-            var y = pub.getY().toBuffer();
-            var priv = pair.getPrivate().toBuffer();
-            if (!arrayBufToBase64UrlDecode(x = arrayBufToBase64UrlEncode(x)).length == 32 ||//have a bug where x value was 31 and not 32 ... but i cant produce it.. 
-                !arrayBufToBase64UrlDecode(y = arrayBufToBase64UrlEncode(y)).length == 32)
-                return genKeyPair(1, priv);
-            pub = x + "." + y;
-            priv = arrayBufToBase64UrlEncode(priv);
-            return { pub: pub, priv: priv };
+            else {
+                return await SeaUtil.pair();
+            }
         }
 
         async function doPair(deterministic, data, add_data) {
             var pair;
-            if (deterministic) {
-                pair = (() => {
-                    var { pub, priv } = genKeyPair(data, ["s"].concat(add_data));
-                    var { pub: epub, priv: epriv } = genKeyPair(data, ["d"].concat(add_data));
+            if (deterministic == "deterministic") {
+                pair = await (async () => {
+                    var { pub, priv } = await genKeyPair(data, ["s"].concat(add_data));
+                    var { pub: epub, priv: epriv } = await genKeyPair(data, ["d"].concat(add_data));
                     return { pub, priv, epub, epriv };
                 })();
-            } else
-                pair = (() => {
-                    var { pub, priv } = genKeyPair();
-                    var { pub: epub, priv: epriv } = genKeyPair();
+            } else {
+                pair = await (async () => {
+                    var { pub, priv } = await genKeyPair();
+                    var { pub: epub, priv: epriv } = await genKeyPair();
                     return { pub, priv, epub, epriv };
                 })();
+                if (typeof deterministic == "function") deterministic(pair);//callback is only for random
+            }
             return pair;
         }
         SEA.pair = doPair;
+
+        doPair.pubFromPrivate = async function (private_base64) {
+            return await SeaUtil.publicFromPrivate(private_base64);
+        }
 
         async function doWork(data, pair, cb, opt) {
             var u;
@@ -261,6 +258,7 @@ module.exports = function shim(SeaUtil) {
                 json.iv,
                 Buffer.from(tag).toString("base64"),
             )
+            r = await shim.S.parse(r);
 
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;

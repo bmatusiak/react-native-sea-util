@@ -33,7 +33,7 @@
     "url": "git+https://github.com/bmatusiak/react-native-sea-util.git"
   },
   "author": "bmatusiak <bmatusiak@gmail.com> (https://github.com/bmatusiak)",
-  "license": "MIT",
+  "license": "(Zlib OR MIT OR Apache-2.0)",
   "bugs": {
     "url": "https://github.com/bmatusiak/react-native-sea-util/issues"
   },

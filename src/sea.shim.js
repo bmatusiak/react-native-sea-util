@@ -137,9 +137,9 @@ module.exports = function shim(SeaUtil) {
                 if (cb) { try { cb(rsha) } catch (e) { console.log(e) } }
                 return rsha;
             }
-            salt = salt || (await shim.random(9));
+            salt = salt || Array.from(await shim.random(9));
             var S = { pbkdf2: { hash: { name: 'SHA-256' }, iter: 100000, ks: 64 } };
-            var r = await SeaUtil.pbkdf2(data, salt, S.pbkdf2.iter, S.pbkdf2.ks * 8).catch((e) => { });
+            var r = await SeaUtil[typeof salt === 'string' ? 'pbkdf2' : 'pbkdf2_2'](data, salt, S.pbkdf2.iter, S.pbkdf2.ks * 8).catch((e) => { });
             data = (await shim.random(data.length))  // Erase data in case of passphrase
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;

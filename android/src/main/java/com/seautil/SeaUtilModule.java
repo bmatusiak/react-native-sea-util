@@ -65,6 +65,16 @@ public class SeaUtilModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void pbkdf2_2(String pwd, final ReadableArray salt, Integer iter, Integer bitSize, Promise promise) {
+        try {
+            String strs = SEAWork.pbkdf2(pwd, salt, iter, bitSize);
+            promise.resolve(strs);
+        } catch (Exception e) {
+            promise.reject("-1", e.getMessage());
+        }
+    }
+
+    @ReactMethod
     public void randomUuid(Promise promise) {
         try {
             String result = UUID.randomUUID().toString();

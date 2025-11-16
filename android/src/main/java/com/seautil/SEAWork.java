@@ -27,6 +27,17 @@ public class SEAWork {
         return Base64.encodeToString(key, Base64.NO_WRAP);
     }
 
+    public static String pbkdf2(String pwd, final ReadableArray salt, Integer iter, Integer bitSize)
+            throws UnsupportedEncodingException
+    {
+        return pbkdf2(
+                pwd,
+                SEAUtil.bytesToHex(SEAUtil.readableArrayToByteArray(salt)),
+                iter,
+                bitSize
+        );  
+    }
+
     public static byte[] digestBytes(String algo, byte[] data) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance(algo);
         md.update(data);

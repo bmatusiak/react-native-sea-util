@@ -7,7 +7,16 @@ module.exports = function shim(SeaUtil) {
         global.TextEncoder = TextEncoder;
         global.TextDecoder = TextDecoder;
         window.crypto = window.crypto || {};
-        window.localStorage = () => { };
+        window.localStorage = {};
+        window.localStorage.getItem = function (key) {
+            return window.localStorage[key] || null;
+        };
+        window.localStorage.setItem = function (key, value) {
+            window.localStorage[key] = value;
+        };
+        window.localStorage.removeItem = function (key) {
+            delete window.localStorage[key];
+        };
         window.crypto.getRandomValues = function getRandomValues(typedArray) {
             console.log("need to get rid of this")
             var Type;
@@ -91,11 +100,11 @@ module.exports = function shim(SeaUtil) {
                 additional_data = [additional_data];
             if (private_key) {
                 var priv = arrayBufToBase64UrlEncode(hash_key(private_key, additional_data));
-                var pub = await SeaUtil.publicFromPrivate(priv).catch((e) => { });
+                var pub = await SeaUtil.publicFromPrivate(priv);
                 return { pub, priv }
             }
             else {
-                return await SeaUtil.pair().catch((e) => { });
+                return await SeaUtil.pair();
             }
         }
 
@@ -120,7 +129,7 @@ module.exports = function shim(SeaUtil) {
         SEA.pair = doPair;
 
         doPair.pubFromPrivate = async function (private_base64) {
-            return await SeaUtil.publicFromPrivate(private_base64).catch((e) => { });
+            return await SeaUtil.publicFromPrivate(private_base64);
         }
 
         async function doWork(data, pair, cb, opt) {
@@ -137,9 +146,9 @@ module.exports = function shim(SeaUtil) {
                 if (cb) { try { cb(rsha) } catch (e) { console.log(e) } }
                 return rsha;
             }
-            salt = salt || Array.from(await shim.random(9));
+            salt = salt || (await shim.random(9));
             var S = { pbkdf2: { hash: { name: 'SHA-256' }, iter: 100000, ks: 64 } };
-            var r = await SeaUtil[typeof salt === 'string' ? 'pbkdf2' : 'pbkdf2_2'](data, salt, S.pbkdf2.iter, S.pbkdf2.ks * 8).catch((e) => { });
+            var r = await SeaUtil.pbkdf2(data, salt, S.pbkdf2.iter, S.pbkdf2.ks * 8);
             data = (await shim.random(data.length))  // Erase data in case of passphrase
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
@@ -155,7 +164,7 @@ module.exports = function shim(SeaUtil) {
             var pub = key.epub || key;
             // var epub = pair.epub;
             var epriv = pair.epriv || pair;
-            var r = await SeaUtil.secret(pub, epriv).catch((e) => { });
+            var r = await SeaUtil.secret(pub, epriv);
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
             return r;
         }
@@ -174,7 +183,7 @@ module.exports = function shim(SeaUtil) {
             // SEA.I // verify is free! Requires no user permission.
             var pub = pair.pub || pair;
             var json_dd = await hash256(json.m);
-            var check = await SeaUtil.verify(pub, json_dd, json.s).catch((e) => { });
+            var check = await SeaUtil.verify(pub, json_dd, json.s);
             if (!check) { throw "Signature did not match." }
             var r = check ? await shim.S.parse(json.m) : u;
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
@@ -201,7 +210,7 @@ module.exports = function shim(SeaUtil) {
             }
             var priv = pair.priv;
             var json_dd = await hash256(json);
-            var siged = await SeaUtil.sign(priv, json_dd).catch((e) => { });
+            var siged = await SeaUtil.sign(priv, json_dd);
             var sig = { m: json, s: siged };
             if (!opt.raw) { sig = 'SEA' + await shim.stringify(sig) }
             if (cb) { try { cb(sig) } catch (e) { console.log(e) } }
@@ -226,7 +235,7 @@ module.exports = function shim(SeaUtil) {
             var pKey = Array.from(await hash256_utf8(tkey));
             msg = Buffer.from(msg).toString("base64");
             pKey = Buffer.from(pKey).toString("base64");
-            var ct = await SeaUtil.encrypt(msg, pKey, iv).catch((e) => { });
+            var ct = await SeaUtil.encrypt(msg, pKey, iv);
             var r = {
                 ct,
                 s: salt.toString("base64"),
@@ -257,7 +266,7 @@ module.exports = function shim(SeaUtil) {
                 Buffer.from(pKey).toString("base64"),
                 json.iv,
                 Buffer.from(tag).toString("base64"),
-            ).catch((e) => { });
+            )
             r = await shim.S.parse(r);
 
             if (cb) { try { cb(r) } catch (e) { console.log(e) } }
